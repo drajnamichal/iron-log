@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Info, Trophy, Crown } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Trophy, Crown, TrendingUp } from "lucide-react";
 import type { ExerciseLog } from "@/lib/types";
 import type { ExerciseTemplate } from "@/lib/types";
 import { detectNewPRs, estimated1RM, type PRRecord, type PRType } from "@/lib/calculations";
+import type { ProgressiveOverloadHint } from "@/lib/progressiveOverload";
 import RestTimer from "./RestTimer";
 import WarmupSets from "./WarmupSets";
 
@@ -19,6 +20,7 @@ interface Props {
   onPR?: () => void;
   /** +1 when rest overlay opens, -1 when it closes (for scroll padding on workout page). */
   onRestTimerDelta?: (delta: 1 | -1) => void;
+  progressiveHint?: ProgressiveOverloadHint;
 }
 
 const PR_LABELS: Record<PRType, string> = {
@@ -36,6 +38,7 @@ export default function ExerciseBlock({
   onUpdateLog,
   onPR,
   onRestTimerDelta,
+  progressiveHint,
 }: Props) {
   const [expanded, setExpanded] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
@@ -99,6 +102,27 @@ export default function ExerciseBlock({
     return e > best ? e : best;
   }, 0);
 
+  const recommendedKg =
+    progressiveHint?.suggestedWeightKg != null && progressiveHint.tone !== "first_time"
+      ? progressiveHint.suggestedWeightKg
+      : null;
+
+  const weightPlaceholder =
+    recommendedKg != null
+      ? String(recommendedKg)
+      : effectiveWeight != null
+        ? String(effectiveWeight)
+        : "kg";
+
+  const hintSurface =
+    progressiveHint?.tone === "progress"
+      ? "border-emerald-800/40 bg-emerald-950/25"
+      : progressiveHint?.tone === "deload_week"
+        ? "border-yellow-800/35 bg-yellow-950/20"
+        : progressiveHint?.tone === "first_time"
+          ? "border-slate-700/50 bg-slate-800/50"
+          : "border-brand-800/30 bg-brand-950/20";
+
   return (
     <div className={`card overflow-hidden transition-all ${allDone ? "opacity-60" : ""}`}>
       <button
@@ -125,9 +149,14 @@ export default function ExerciseBlock({
             {template.restSeconds >= 60
               ? `${Math.floor(template.restSeconds / 60)}min`
               : `${template.restSeconds}s`}
-            {effectiveWeight != null && (
+            {previousWeight != null && (
               <span className="text-brand-400">
-                {" "}· {deloadFactor ? "Deload " : "Posl. "}{effectiveWeight}kg
+                {" "}· Minulý max {previousWeight} kg
+                {deloadFactor != null &&
+                  effectiveWeight != null &&
+                  effectiveWeight !== previousWeight && (
+                  <span className="text-slate-400"> → dnes {effectiveWeight} kg</span>
+                )}
               </span>
             )}
           </p>
@@ -158,6 +187,21 @@ export default function ExerciseBlock({
       {showNotes && template.notes && (
         <div className="border-t border-slate-800 bg-brand-950/30 px-4 py-3 text-sm text-brand-300">
           {template.notes}
+        </div>
+      )}
+
+      {expanded && progressiveHint && (
+        <div className={`border-t px-4 py-2.5 text-xs leading-snug ${hintSurface}`}>
+          <p className="mb-1 flex items-center gap-1.5 font-semibold uppercase tracking-wide text-[10px] text-slate-400">
+            <TrendingUp className="h-3 w-3 text-brand-400" />
+            Odporúčanie (progres)
+          </p>
+          <p className="text-slate-200">{progressiveHint.lineSk}</p>
+          {progressiveHint.suggestedWeightKg != null && progressiveHint.tone !== "first_time" && (
+            <p className="mt-2 font-mono text-sm font-bold text-brand-300">
+              Cieľová záťaž dnes: {progressiveHint.suggestedWeightKg} kg
+            </p>
+          )}
         </div>
       )}
 
@@ -197,7 +241,7 @@ export default function ExerciseBlock({
                     <input
                       type="number"
                       inputMode="decimal"
-                      placeholder={effectiveWeight != null ? String(effectiveWeight) : "kg"}
+                      placeholder={weightPlaceholder}
                       value={log.weight_kg ?? ""}
                       onChange={(e) =>
                         onUpdateLog(log.id, {

@@ -7,6 +7,11 @@ import type {
   WorkoutType,
 } from "@/lib/types";
 import { getWorkoutTemplate } from "@/data/program";
+import {
+  buildProgressiveOverloadHint,
+  findLastCompletedSessionLift,
+  type ProgressiveOverloadHint,
+} from "@/lib/progressiveOverload";
 
 const SESSIONS_KEY = "sessions";
 const LOGS_KEY = "logs";
@@ -209,22 +214,28 @@ export function useWorkouts() {
     [],
   );
 
-  const getPreviousWeight = useCallback(
-    (exerciseId: string): number | null => {
-      const allLogs = loadLogs();
-      const completed = allLogs
-        .filter(
-          (l) =>
-            l.exercise_id === exerciseId &&
-            l.completed &&
-            l.weight_kg != null,
-        )
-        .sort(
-          (a, b) =>
-            allLogs.indexOf(b) - allLogs.indexOf(a),
-        );
+  const getPreviousWeight = useCallback((exerciseId: string): number | null => {
+    const ctx = findLastCompletedSessionLift(exerciseId, loadSessions(), loadLogs());
+    return ctx?.topWeightKg ?? null;
+  }, []);
 
-      return completed[0]?.weight_kg ?? null;
+  const getProgressiveOverloadHint = useCallback(
+    (
+      exerciseId: string,
+      repsMin: number,
+      repsMax: number,
+      opts?: { excludeSessionId?: string; isDeloadWeek?: boolean; deloadFactor?: number },
+    ): ProgressiveOverloadHint => {
+      const ctx = findLastCompletedSessionLift(
+        exerciseId,
+        loadSessions(),
+        loadLogs(),
+        opts?.excludeSessionId,
+      );
+      return buildProgressiveOverloadHint(ctx, repsMin, repsMax, {
+        isDeloadWeek: opts?.isDeloadWeek,
+        deloadFactor: opts?.deloadFactor,
+      });
     },
     [],
   );
@@ -239,6 +250,7 @@ export function useWorkouts() {
     deleteSession,
     getExerciseHistory,
     getPreviousWeight,
+    getProgressiveOverloadHint,
     refresh: () => persist(loadSessions()),
   };
 }

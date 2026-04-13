@@ -18,6 +18,7 @@ import { usePRs } from "@/hooks/useStats";
 import ExerciseBlock from "@/components/ExerciseBlock";
 import Confetti from "@/components/Confetti";
 import type { WorkoutType, WorkoutSessionWithLogs, ExerciseLog } from "@/lib/types";
+import type { ProgressiveOverloadHint } from "@/lib/progressiveOverload";
 
 const DELOAD_EVERY_WEEKS = 5;
 const DELOAD_FACTOR = 0.6;
@@ -33,6 +34,7 @@ export default function Workout() {
     deleteSession,
     sessions,
     getPreviousWeight,
+    getProgressiveOverloadHint,
   } = useWorkouts();
 
   const [activeSession, setActiveSession] = useState<WorkoutSessionWithLogs | null>(null);
@@ -59,6 +61,21 @@ export default function Workout() {
     const consecutiveWeeks = weeks.size;
     return consecutiveWeeks > 0 && consecutiveWeeks % DELOAD_EVERY_WEEKS === 0;
   }, [sessions]);
+
+  const progressiveHints = useMemo((): Record<string, ProgressiveOverloadHint> => {
+    if (!activeSession?.id) return {};
+    const tpl = getWorkoutTemplate(activeSession.workout_type);
+    if (!tpl) return {};
+    const map: Record<string, ProgressiveOverloadHint> = {};
+    for (const ex of tpl.exercises) {
+      map[ex.id] = getProgressiveOverloadHint(ex.id, ex.repsMin, ex.repsMax, {
+        excludeSessionId: activeSession.id,
+        isDeloadWeek,
+        deloadFactor: isDeloadWeek ? DELOAD_FACTOR : undefined,
+      });
+    }
+    return map;
+  }, [activeSession?.id, activeSession?.workout_type, getProgressiveOverloadHint, isDeloadWeek]);
 
   useEffect(() => {
     const inProgress = sessions.find((s) => !s.completed_at);
@@ -221,6 +238,7 @@ export default function Workout() {
                 onUpdateLog={handleUpdateLog}
                 onPR={handlePR}
                 onRestTimerDelta={handleRestTimerDelta}
+                progressiveHint={progressiveHints[ex.id]}
               />
             );
           })}
