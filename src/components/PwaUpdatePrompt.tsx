@@ -3,10 +3,21 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 import { RefreshCw, X } from "lucide-react";
 
 const BANNER_PAD = "4.5rem";
+const UPDATE_POLL_MS = 5 * 60 * 1000;
+
+function checkServiceWorkerUpdate() {
+  if (!("serviceWorker" in navigator)) return;
+  void navigator.serviceWorker.getRegistration().then((r) => {
+    void r?.update();
+  });
+}
 
 /**
  * Banner keď je nový service worker (nový deploy) alebo prvý offline režim.
  * Vyžaduje registerType: "prompt" vo vite-plugin-pwa.
+ *
+ * Pri `npm run dev` musí byť vo vite `devOptions.enabled: true` — inak vite-plugin-pwa
+ * nahradí tento modul prázdnym stubom (`needRefresh` / `offlineReady` ostanú vždy false).
  */
 export default function PwaUpdatePrompt() {
   const {
@@ -14,15 +25,29 @@ export default function PwaUpdatePrompt() {
     offlineReady: [offlineReady, setOfflineReady],
     updateServiceWorker,
   } = useRegisterSW({
+    onRegisterError(err) {
+      console.warn("[PWA] registrácia zlyhala:", err);
+    },
     onRegisteredSW(_swUrl, r) {
-      if (r) {
-        const halfHour = 30 * 60 * 1000;
-        setInterval(() => {
-          void r.update();
-        }, halfHour);
-      }
+      if (r) void r.update();
     },
   });
+
+  useEffect(() => {
+    const tick = () => checkServiceWorkerUpdate();
+    const id = window.setInterval(tick, UPDATE_POLL_MS);
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    window.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", tick);
+    tick();
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
 
   const visible = needRefresh || offlineReady;
 
@@ -45,7 +70,7 @@ export default function PwaUpdatePrompt() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 z-[80] border-b border-brand-500/35 bg-slate-950/95 px-4 pb-3 pt-[max(0.65rem,env(safe-area-inset-top))] shadow-lg backdrop-blur-md"
+      className="fixed inset-x-0 top-0 z-[9999] border-b border-brand-400/50 bg-slate-950 px-4 pb-3 pt-[max(0.65rem,env(safe-area-inset-top))] shadow-xl shadow-black/40 ring-1 ring-brand-500/30 backdrop-blur-md"
       role="status"
       aria-live="polite"
     >

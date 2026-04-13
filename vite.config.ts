@@ -8,6 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
+      /** Bez toho `npm run dev` používa prázdny stub — banner sa nikdy nezobrazí. */
+      devOptions: {
+        enabled: true,
+        suppressWarnings: true,
+      },
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Iron Log – Treningovy Denik",
