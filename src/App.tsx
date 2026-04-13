@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import Layout from "@/components/Layout";
+import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Workout = lazy(() => import("@/pages/Workout"));
@@ -19,6 +20,7 @@ function RouteFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <PwaUpdatePrompt />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route element={<Layout />}>
