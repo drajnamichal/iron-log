@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply min-h-screen;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-slate-900/80 border border-slate-800/60 backdrop-blur-sm;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3
+           font-semibold text-white transition-all active:scale-[0.97]
+           hover:bg-brand-500 disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-5 py-3
+           font-semibold text-slate-200 transition-all active:scale-[0.97]
+           hover:bg-slate-700 border border-slate-700;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2
+           font-medium text-slate-400 transition-all active:scale-[0.97]
+           hover:bg-slate-800 hover:text-white;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3
+           text-white placeholder:text-slate-500 transition-colors
+           focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .badge-push {
+    @apply badge bg-red-500/15 text-red-400 border border-red-500/20;
+  }
+
+  .badge-pull {
+    @apply badge bg-blue-500/15 text-blue-400 border border-blue-500/20;
+  }
+
+  .badge-legs {
+    @apply badge bg-green-500/15 text-green-400 border border-green-500/20;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(var(--rotation, 360deg));
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 2s ease-in forwards;
+}
