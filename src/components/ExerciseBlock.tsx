@@ -164,7 +164,10 @@ export default function ExerciseBlock({
       {expanded && (
         <>
           {/* Warm-up sets for compound lifts */}
-          {isCompound && effectiveWeight && effectiveWeight > 20 && doneSets === 0 && (
+          {isCompound &&
+            effectiveWeight != null &&
+            effectiveWeight > 20 &&
+            doneSets === 0 && (
             <WarmupSets workingWeight={effectiveWeight} />
           )}
 
